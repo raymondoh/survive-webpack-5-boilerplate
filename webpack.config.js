@@ -4,22 +4,60 @@ const { merge } = require("webpack-merge");
 const parts = require("./webpack.parts");
 
 const commonConfig = merge([
-  { output: { path: path.resolve(process.cwd(), "dist") } },
+  {
+    entry: {
+      main: path.resolve(__dirname, "./src/index.js"),
+    },
+    output: {
+      //path: path.resolve(__dirname, "dist"), // works
+      //path: path.resolve(__dirname, "./dist"),// works
+      path: path.resolve(process.cwd(), "dist"),
+      filename: "scripts/[name].[chunkhash].bundle.js",
+      publicPath: "", // or comment out
+    },
+
+    // entry: {
+    //   index: {
+    //     import: "./src/index.js",
+    //     dependOn: "shared",
+    //   },
+    //   another: {
+    //     import: "./src/scripts/modules/RevealOnScroll.js",
+    //     dependOn: "shared",
+    //   },
+    //   shared: "lodash",
+    // },
+    // output: {
+    //   filename: "scripts/[name].bundle.js",
+    //   path: path.resolve(__dirname, "dist"),
+    //   clean: true,
+    // },
+    // optimization: {
+    //   splitChunks: {
+    //     chunks: "all",
+    //   },
+    // },
+  },
   parts.clean(),
-  { entry: ["./src"] },
   parts.page(),
-  parts.extractSCSS(),
-  parts.loadImages({ limit: 15000 }),
   parts.loadJavaScript(), // move to production?
+  parts.extractSCSS(),
+  //parts.loadImages({ limit: 150000 }),// TRY
+  parts.loadImages(),
+  parts.loadResponsiveImages(),
+  parts.copy(), //
+  //parts.loadHtml(),
+  //parts.loadSvg(),
 ]);
 
 const productionConfig = merge([
   parts.minifyJavaScript(),
   parts.minifyCSS({ options: { preset: ["default"] } }),
-  parts.eliminateUnusedCSS(),
-  parts.generateSourceMaps({ type: "source-map" }),
-  //{ optimization: { splitChunks: { chunks: "all" } } },
+  //parts.generateSourceMaps({ type: "source-map" }),
+  //parts.eliminateUnusedCSS(), //PROBLEM
 
+  //ORIGINAL
+  { optimization: { splitChunks: { chunks: "all" } } },
   {
     optimization: {
       splitChunks: {
@@ -37,10 +75,11 @@ const productionConfig = merge([
 
 const developmentConfig = merge([
   parts.devServer(),
-  parts.generateSourceMaps({ type: "eval-cheap-source-map" }),
+  //parts.generateSourceMaps({ type: "eval-cheap-source-map" })
+  parts.generateSourceMaps({ type: "inline-source-map" }),
 ]);
 
-const getConfig = (mode) => {
+const getConfig = mode => {
   switch (mode) {
     case "production":
       return merge(commonConfig, productionConfig, { mode });
@@ -51,12 +90,3 @@ const getConfig = (mode) => {
   }
 };
 module.exports = getConfig(mode);
-
-// module.exports = {
-//   entry: "./src/index.js",
-//   output: {
-//     path: path.resolve(__dirname, "dist/assets"),
-//     filename: "index_bundle.js",
-//   },
-//   mode: "production",
-// };
